@@ -1,5 +1,7 @@
 package org.dru.dusaf.database;
 
+import org.dru.dusaf.cache.CacheModule;
+import org.dru.dusaf.cache.LruCacheFactory;
 import org.dru.dusaf.database.config.DbClusterConfig;
 import org.dru.dusaf.database.executor.DbExecutorProvider;
 import org.dru.dusaf.database.executor.DbExecutorProviderImpl;
@@ -27,7 +29,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.stream.Stream;
 
-@DependsOn({JsonModule.class, TimeModule.class})
+@DependsOn({CacheModule.class, JsonModule.class, TimeModule.class})
 public final class DatabaseModule implements Module {
     @Provides
     @Singleton
@@ -70,8 +72,9 @@ public final class DatabaseModule implements Module {
     public DbStoreFactory getDbStoreFactory(final DbExecutorProvider dbExecutorProvider,
                                             final TimeSupplier timeSupplier,
                                             final DbTableFactory dbTableFactory,
-                                            final DbTableManager dbTableManager) {
-        return new DbStoreFactoryImpl(dbExecutorProvider, timeSupplier, dbTableFactory, dbTableManager);
+                                            final DbTableManager dbTableManager,
+                                            final LruCacheFactory lruCacheFactory) {
+        return new DbStoreFactoryImpl(dbExecutorProvider, timeSupplier, dbTableFactory, dbTableManager, lruCacheFactory);
     }
 
     @Inject
