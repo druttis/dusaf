@@ -127,7 +127,7 @@ public final class ReflectionUtils {
                 || Number.class.isAssignableFrom(objectClass)) {
             return source;
         }
-        final T target = newInstance(constructor, Collections.emptyList());
+        final T target = newInstance(constructor);
         getDeclaredFields(objectClass).stream().filter(field -> {
             final int mod = field.getModifiers();
             return !Modifier.isStatic(mod);
