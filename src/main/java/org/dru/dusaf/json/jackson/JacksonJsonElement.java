@@ -7,8 +7,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.dru.dusaf.json.JsonElement;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public final class JacksonJsonElement implements JsonElement {
     private static final JsonElement NULL = new JacksonJsonElement(NullNode.getInstance());
@@ -132,6 +131,16 @@ public final class JacksonJsonElement implements JsonElement {
     }
 
     @Override
+    public Set<String> ids() {
+        final Set<String> ids = new HashSet<>();
+        final Iterator<String> it = getNode().fieldNames();
+        while (it.hasNext()) {
+            ids.add(it.next());
+        }
+        return ids;
+    }
+
+    @Override
     public boolean has(final String name) {
         return getNode().has(name);
     }
@@ -166,8 +175,8 @@ public final class JacksonJsonElement implements JsonElement {
         return node;
     }
 
-    public ContainerNode getContainerNode() {
-        return (ContainerNode) getNode();
+    public ContainerNode<?> getContainerNode() {
+        return (ContainerNode<?>) getNode();
     }
 
     public ArrayNode getArrayNode() {

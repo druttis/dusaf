@@ -1,5 +1,7 @@
 package org.dru.dusaf.json;
 
+import java.util.Set;
+
 public interface JsonElement {
     boolean isArray();
 
@@ -40,6 +42,8 @@ public interface JsonElement {
     Float getAsFloat();
 
     Double getAsDouble();
+
+    Set<String> ids();
 
     boolean has(String name);
 

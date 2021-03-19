@@ -71,7 +71,7 @@ public final class JacksonJsonSerializer implements JsonSerializer {
     @Override
     public String elementToString(final JsonElement element) {
         try {
-            return mapper.writeValueAsString(element);
+            return mapper.writeValueAsString(getNode(element));
         } catch (final IOException exc) {
             throw new RuntimeException(exc);
         }
