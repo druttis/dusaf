@@ -2,6 +2,10 @@ package org.dru.dusaf.database.store;
 
 import org.dru.dusaf.database.executor.DbExecutor;
 import org.dru.dusaf.database.model.*;
+import org.dru.dusaf.database.sql.SQL;
+import org.dru.dusaf.database.sql.SQLSelectBuilder;
+import org.dru.dusaf.functional.ThrowingBiConsumer;
+import org.dru.dusaf.functional.ThrowingFunction;
 import org.dru.dusaf.reflection.ReflectionUtils;
 import org.dru.dusaf.time.TimeSupplier;
 
@@ -9,74 +13,86 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 
 public final class DbStoreImpl<K, V> implements DbStore<K, V> {
     private final DbExecutor dbExecutor;
     private final TimeSupplier timeSupplier;
-    private final DbMember<K> dbKey;
-    private final DbMember<V> dbValue;
-    private final DbMember<Long> dbCreated;
-    private final DbMember<Long> dbLastModified;
-    private final DbSelect dbSelect;
-    private final DbSelect forUpdate;
-    private final DbInsert dbInsert;
-    private final DbUpdate dbUpdate;
-    private final DbDelete dbDelete;
+    private final DbColumn<K> dbKey;
+    private final DbColumn<V> dbValue;
+    private final DbColumn<Long> dbCreated;
+    private final DbColumn<Long> dbUpdated;
+    private final DbTable dbTable;
+    private final SQL selectSql;
+    private final SQL selectForUpdateSql;
+    private final SQL insertSql;
+    private final SQL updateSql;
+    private final SQL deleteSql;
+    private final SQL deleteAllSql;
 
-    DbStoreImpl(final DbExecutor dbExecutor, final TimeSupplier timeSupplier, final String name, final Class<K> keyType,
-                final Class<V> valueType, final DbTableFactory dbTableFactory, final DbTableManager tableManager,
-                final boolean exploded) {
+    DbStoreImpl(final DbExecutor dbExecutor, final TimeSupplier timeSupplier, final String name,
+                final Class<K> keyType, final Class<V> valueType, final DbSystem tableBuilderFactory,
+                final DbTableManager tableManager) {
         this.dbExecutor = dbExecutor;
         this.timeSupplier = timeSupplier;
-        final DbTable<?> dbTable = dbTableFactory.newTable(name);
-        dbKey = dbTable.newMember("key", keyType);
-        dbValue = dbTable.newMember("value", valueType).length(256);
-        if (exploded) {
-            dbValue.explode(true);
-        }
-        dbCreated = dbTable.newMember("created", Long.class);
-        dbLastModified = dbTable.newMember("lastModified", Long.class);
-        dbSelect = DbSelect.field(dbValue).where(dbKey, "=?").limit(2).build();
-        forUpdate = DbSelect.extend(dbSelect).forUpdate().build();
-        dbInsert = DbInsert.fields(dbKey, dbValue, dbCreated).build();
-        dbUpdate = DbUpdate.fields(dbValue, dbLastModified).where(dbKey, "=?").build();
-        dbDelete = DbDelete.where(dbKey, "=?").build();
+        final DbTemplate tableBuilder = tableBuilderFactory.newTemplate(name);
+        dbKey = tableBuilder.newColumn("key", keyType, DbModifier.PRIMARY);
+        dbValue = tableBuilder.newColumn("value", valueType, DbModifier.NOT_NULL);
+        dbCreated = tableBuilder.newColumn("created", Long.class, DbModifier.NOT_NULL);
+        dbUpdated = tableBuilder.newColumn("updated", Long.class);
+        dbTable = tableBuilder.build();
         tableManager.createTableIfNotExist(dbExecutor, 0, dbTable);
+        selectSql = SQL.select(dbValue).from(dbTable).where(SQL.eq(dbKey)).limit(2).build();
+        selectForUpdateSql = SQL.select(dbValue).from(dbTable).where(SQL.eq(dbKey)).limit(2).forUpdate().build();
+        insertSql = SQL.insertInto(dbTable).columns(dbKey, dbValue, dbCreated).build();
+        updateSql = SQL.update(dbTable).set(dbValue, dbUpdated).where(SQL.eq(dbKey)).build();
+        deleteSql = SQL.deleteFrom(dbTable).where(SQL.eq(dbKey)).build();
+        deleteAllSql = SQL.deleteFrom(dbTable).build();
     }
 
     @Override
     public V get(final K key) {
         try {
-            return dbExecutor.query(0, conn -> get(conn, dbSelect, key));
+            return dbExecutor.query(0, conn -> get(conn, key, false));
         } catch (final SQLException exc) {
             throw new RuntimeException(exc);
         }
     }
 
     @Override
-    public V update(final K key, final UnaryOperator<V> updater) {
+    public Map<K, V> get(final Set<K> keys) {
+        try {
+            return dbExecutor.query(0, conn -> get(conn, keys, false));
+        } catch (final SQLException exc) {
+            throw new RuntimeException(exc);
+        }
+    }
+
+    @Override
+    public Map<K, V> get(final int offset, final int limit) {
+        try {
+            return dbExecutor.query(0, conn -> get(conn, offset, limit));
+        } catch (final SQLException exc) {
+            throw new RuntimeException(exc);
+        }
+    }
+
+    @Override
+    public V update(final K key, final UnaryOperator<V> operator) {
         try {
             return dbExecutor.update(0, conn -> {
-                final V original = get(conn, forUpdate, key);
-                final V result = updater.apply(ReflectionUtils.copyInstance(original));
-                if ((original == null && result != null) || (original != null && !original.equals(result))) {
+                final V original = get(conn, key, true);
+                final V result = operator.apply(ReflectionUtils.copyInstance(original));
+                if (!Objects.equals(original, result)) {
                     if (original == null) {
-                        try (final PreparedStatement stmt = dbInsert.prepareStatement(conn)) {
-                            dbInsert.setField(stmt, dbKey, key);
-                            dbInsert.setField(stmt, dbValue, result);
-                            dbInsert.setField(stmt, dbCreated, timeSupplier.get().toEpochMilli());
-                            stmt.executeUpdate();
-                        }
-                    } else if (result == null) {
-                        delete(conn, key);
+                        insert(conn, key, result);
+                    } else if (result != null) {
+                        update(conn, key, result);
                     } else {
-                        try (final PreparedStatement stmt = dbUpdate.prepareStatement(conn)) {
-                            dbUpdate.setField(stmt, dbValue, result);
-                            dbUpdate.setField(stmt, dbLastModified, timeSupplier.get().toEpochMilli());
-                            dbUpdate.setCondition(stmt, dbKey, key);
-                            stmt.executeUpdate();
-                        }
+                        delete(conn, key);
                     }
                 }
                 return result;
@@ -87,37 +103,274 @@ public final class DbStoreImpl<K, V> implements DbStore<K, V> {
     }
 
     @Override
-    public void delete(final K key) {
+    public Map<K, V> update(final Set<K> keys, final UnaryOperator<V> operator) {
         try {
-            dbExecutor.update(0, conn -> {
-                delete(conn, key);
+            return dbExecutor.update(0, conn -> {
+                final Map<K, V> originals = get(conn, keys, true);
+                final Map<K, V> inserts = new HashMap<>();
+                final Map<K, V> updates = new HashMap<>();
+                final Set<K> deletes = new HashSet<>();
+                originals.forEach((key, original) -> {
+                    final V result = operator.apply(ReflectionUtils.copyInstance(original));
+                    if (!Objects.equals(original, result)) {
+                        if (original == null) {
+                            inserts.put(key, result);
+                        } else if (result != null) {
+                            updates.put(key, result);
+                        } else {
+                            deletes.add(key);
+                        }
+                    }
+                });
+                insert(conn, inserts);
+                update(conn, updates);
+                delete(conn, deletes);
+                originals.putAll(inserts);
+                originals.putAll(updates);
+                originals.keySet().removeAll(deletes);
+                return originals;
             });
         } catch (final SQLException exc) {
             throw new RuntimeException(exc);
         }
     }
 
-    private V get(final Connection conn, final DbSelect select, final K key) throws SQLException {
-        try (final PreparedStatement stmt = select.prepareStatement(conn)) {
-            select.setCondition(stmt, dbKey, key);
+    @Override
+    public Map<K, V> update(final Map<K, UnaryOperator<V>> operatorByKey) {
+        try {
+            return dbExecutor.update(0, conn -> {
+                final Set<K> keys = operatorByKey.keySet();
+                final Map<K, V> originals = get(conn, keys, true);
+                final Map<K, V> inserts = new HashMap<>();
+                final Map<K, V> updates = new HashMap<>();
+                final Set<K> deletes = new HashSet<>();
+                originals.forEach((key, original) -> {
+                    final UnaryOperator<V> operator = operatorByKey.get(key);
+                    final V result = operator.apply(ReflectionUtils.copyInstance(original));
+                    if (!Objects.equals(original, result)) {
+                        if (original == null) {
+                            inserts.put(key, result);
+                        } else if (result != null) {
+                            updates.put(key, result);
+                        } else {
+                            deletes.add(key);
+                        }
+                    }
+                });
+                insert(conn, inserts);
+                update(conn, updates);
+                delete(conn, deletes);
+                originals.putAll(inserts);
+                originals.putAll(updates);
+                originals.keySet().removeAll(deletes);
+                return originals;
+            });
+        } catch (final SQLException exc) {
+            throw new RuntimeException(exc);
+        }
+    }
+
+    @Override
+    public Map<K, V> update(final Set<K> keys, final BiFunction<K, V, V> operator) {
+        try {
+            return dbExecutor.update(0, conn -> {
+                final Map<K, V> originals = get(conn, keys, true);
+                final Map<K, V> inserts = new HashMap<>();
+                final Map<K, V> updates = new HashMap<>();
+                final Set<K> deletes = new HashSet<>();
+                originals.forEach((key, original) -> {
+                    final V result = operator.apply(key, ReflectionUtils.copyInstance(original));
+                    if (!Objects.equals(originals, result)) {
+                        if (original == null) {
+                            if (result != null) {
+                                inserts.put(key, result);
+                            }
+                        } else if (result != null) {
+                            updates.put(key, result);
+                        } else {
+                            deletes.add(key);
+                        }
+                    }
+                });
+                insert(conn, inserts);
+                update(conn, updates);
+                delete(conn, deletes);
+                originals.putAll(inserts);
+                originals.putAll(updates);
+                originals.keySet().removeAll(deletes);
+                return originals;
+            });
+        } catch (final SQLException exc) {
+            throw new RuntimeException(exc);
+        }
+    }
+
+    @Override
+    public int delete(final K key) {
+        try {
+            return dbExecutor.update(0, conn -> {
+                return delete(conn, key);
+            });
+        } catch (final SQLException exc) {
+            throw new RuntimeException(exc);
+        }
+    }
+
+    @Override
+    public int delete(final Set<K> keys) {
+        try {
+            return dbExecutor.update(0, conn -> {
+                return delete(conn, keys);
+            });
+        } catch (final SQLException exc) {
+            throw new RuntimeException(exc);
+        }
+    }
+
+    @Override
+    public int delete() {
+        try {
+            return dbExecutor.update(0, (ThrowingFunction<Connection, Integer, SQLException>) this::delete);
+        } catch (final SQLException exc) {
+            throw new RuntimeException(exc);
+        }
+    }
+
+    private V get(final Connection conn, final K key, final boolean lock) throws SQLException {
+        final SQL sql = (lock ? selectForUpdateSql : selectSql);
+        try (final PreparedStatement stmt = sql.prepareStatement(conn)) {
+            sql.set(stmt, dbKey, 0, key);
             try (final ResultSet rset = stmt.executeQuery()) {
                 rset.setFetchSize(2);
                 if (!rset.next()) {
                     return null;
                 }
-                final V value = select.getField(rset, dbValue);
+                final V result = sql.get(rset, dbValue);
                 if (rset.next()) {
-                    throw new SQLException("duplicate: key=" + key);
+                    throw new SQLException("duplicate key: " + key);
                 }
-                return value;
+                return result;
             }
         }
     }
 
-    private void delete(final Connection conn, final K key) throws SQLException {
-        try (final PreparedStatement stmt = dbDelete.prepareStatement(conn)) {
-            dbDelete.setCondition(stmt, dbKey, key);
-            stmt.executeUpdate();
+    private Map<K, V> get(final Connection conn, final Set<K> keys, final boolean lock) throws SQLException {
+        final int size = keys.size();
+        final SQLSelectBuilder builder
+                = SQL.select(dbKey, dbValue).from(dbTable).where(SQL.in(dbKey, keys)).limit(size + 1);
+        if (lock) {
+            builder.forUpdate();
+        }
+        final SQL sql = builder.build();
+        try (final PreparedStatement stmt = sql.prepareStatement(conn)) {
+            sql.set(stmt, dbKey, 0, keys);
+            try (final ResultSet rset = stmt.executeQuery()) {
+                rset.setFetchSize(size + 1);
+                final Map<K, V> result = new HashMap<>();
+                while (rset.next()) {
+                    K key = sql.get(rset, dbKey);
+                    V value = sql.get(rset, dbValue);
+                    if (result.put(key, value) != null) {
+                        throw new SQLException("duplicate key: " + key);
+                    }
+                }
+                return result;
+            }
+        }
+    }
+
+    private Map<K, V> get(final Connection conn, final int offset, final int limit)
+            throws SQLException {
+        final SQL sql = SQL.select(dbKey, dbValue).from(dbTable).offset(offset).limit(limit).build();
+        try (final PreparedStatement stmt = sql.prepareStatement(conn)) {
+            try (final ResultSet rset = stmt.executeQuery()) {
+                rset.setFetchSize(limit);
+                final Map<K, V> result = new HashMap<>();
+                while (rset.next()) {
+                    K key = sql.get(rset, dbKey);
+                    V value = sql.get(rset, dbValue);
+                    if (result.put(key, value) != null) {
+                        throw new SQLException("duplicate key: " + key);
+                    }
+                }
+                return result;
+            }
+        }
+    }
+
+    private void insert(final Connection conn, final K key, final V value) throws SQLException {
+        System.out.println(insertSql);
+        try (final PreparedStatement stmt = insertSql.prepareStatement(conn)) {
+            insertSql.set(stmt, dbKey, 0, key);
+            insertSql.set(stmt, dbValue, 0, value);
+            insertSql.set(stmt, dbCreated, 0, timeSupplier.get().toEpochMilli());
+        }
+    }
+
+    private void insert(final Connection conn, final Map<K, V> valueByKey) throws SQLException {
+        try (final PreparedStatement stmt = insertSql.prepareStatement(conn)) {
+            valueByKey.forEach(ThrowingBiConsumer.wrap((ThrowingBiConsumer<K, V, SQLException>) (key, value) -> {
+                insertSql.set(stmt, dbKey, 0, key);
+                insertSql.set(stmt, dbValue, 0, value);
+                insertSql.set(stmt, dbCreated, 0, timeSupplier.get().toEpochMilli());
+                stmt.addBatch();
+            }));
+        }
+    }
+
+    private void update(final Connection conn, final K key, final V value) throws SQLException {
+        try (final PreparedStatement stmt = updateSql.prepareStatement(conn)) {
+            updateSql.set(stmt, dbValue, 0, value);
+            updateSql.set(stmt, dbUpdated, 0, timeSupplier.get().toEpochMilli());
+            updateSql.set(stmt, dbKey, 0, key);
+            final int result = stmt.executeUpdate();
+            if (result > 1) {
+                throw new SQLException("duplicate key: " + key);
+            }
+        }
+    }
+
+    private void update(final Connection conn, final Map<K, V> valueByKey) throws SQLException {
+        try (final PreparedStatement stmt = updateSql.prepareStatement(conn)) {
+            valueByKey.forEach(ThrowingBiConsumer.wrap((ThrowingBiConsumer<K, V, SQLException>) (key, value) -> {
+                updateSql.set(stmt, dbValue, 0, value);
+                updateSql.set(stmt, dbUpdated, 0, timeSupplier.get().toEpochMilli());
+                updateSql.set(stmt, dbKey, 0, key);
+                stmt.addBatch();
+            }));
+            final int result = IntStream.of(stmt.executeBatch()).sum();
+            if (result > valueByKey.size()) {
+                throw new SQLException("duplicate key");
+            }
+        }
+    }
+
+    private int delete(final Connection conn, final K key) throws SQLException {
+        try (final PreparedStatement stmt = deleteSql.prepareStatement(conn)) {
+            deleteSql.set(stmt, dbKey, 0, key);
+            final int result = stmt.executeUpdate();
+            if (result > 1) {
+                throw new SQLException("duplicate key: " + key);
+            }
+            return result;
+        }
+    }
+
+    private int delete(final Connection conn, final Set<K> keys) throws SQLException {
+        final SQL sql = SQL.deleteFrom(dbTable).where(SQL.in(dbKey, keys)).build();
+        try (final PreparedStatement stmt = sql.prepareStatement(conn)) {
+            sql.set(stmt, dbKey, 0, keys);
+            final int result = stmt.executeUpdate();
+            if (result > keys.size()) {
+                throw new SQLException("duplicate key(s)");
+            }
+            return result;
+        }
+    }
+
+    private int delete(final Connection conn) throws SQLException {
+        try (final PreparedStatement stmt = deleteAllSql.prepareStatement(conn)) {
+            return stmt.executeUpdate();
         }
     }
 }

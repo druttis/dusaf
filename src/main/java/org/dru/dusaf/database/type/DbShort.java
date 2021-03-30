@@ -13,13 +13,13 @@ public final class DbShort extends AbstractDbType<Short> {
     }
 
     @Override
-    protected Short getResultImpl(final ResultSet rset, final int index) throws SQLException {
-        return rset.getShort(index);
+    protected Short doGet(final ResultSet rset, final int columnIndex) throws SQLException {
+        return rset.getShort(columnIndex);
     }
 
     @Override
-    protected void setParameterImpl(final PreparedStatement stmt, final int index, final Short value)
+    protected void doSet(final PreparedStatement stmt, final int parameterIndex, final Short value)
             throws SQLException {
-        stmt.setShort(index, value);
+        stmt.setShort(parameterIndex, value);
     }
 }

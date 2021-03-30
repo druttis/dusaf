@@ -14,12 +14,12 @@ public final class DbByteArray extends AbstractDbType<byte[]> {
     public static final DbByteArray INSTANCE = new DbByteArray();
 
     private DbByteArray() {
-        super(JDBCType.BLOB, false, true);
+        super(JDBCType.BLOB, true);
     }
 
     @Override
-    protected byte[] getResultImpl(final ResultSet rset, final int index) throws SQLException {
-        final InputStream in = rset.getBinaryStream(index);
+    protected byte[] doGet(final ResultSet rset, final int columnIndex) throws SQLException {
+        final InputStream in = rset.getBinaryStream(columnIndex);
         if (in == null) {
             return null;
         }
@@ -31,8 +31,8 @@ public final class DbByteArray extends AbstractDbType<byte[]> {
     }
 
     @Override
-    protected void setParameterImpl(final PreparedStatement stmt, final int index, final byte[] value)
+    protected void doSet(final PreparedStatement stmt, final int parameterIndex, final byte[] value)
             throws SQLException {
-        stmt.setBinaryStream(index, new ByteArrayInputStream(value));
+        stmt.setBinaryStream(parameterIndex, new ByteArrayInputStream(value));
     }
 }

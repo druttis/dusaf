@@ -20,14 +20,14 @@ public final class DbJson<T> extends AbstractDbType<T> {
     private final JsonSerializer jsonSerializer;
 
     private DbJson(final Class<T> type, final JsonSerializer jsonSerializer) {
-        super(JDBCType.BLOB, false, true);
+        super(JDBCType.BLOB, true);
         this.type = Objects.requireNonNull(type, "type");
         this.jsonSerializer = Objects.requireNonNull(jsonSerializer, "jsonSerializer");
     }
 
     @Override
-    protected T getResultImpl(final ResultSet rset, final int index) throws SQLException {
-        final InputStream in = rset.getBinaryStream(index);
+    protected T doGet(final ResultSet rset, final int columnIndex) throws SQLException {
+        final InputStream in = rset.getBinaryStream(columnIndex);
         if (in == null) {
             return null;
         }
@@ -39,14 +39,13 @@ public final class DbJson<T> extends AbstractDbType<T> {
     }
 
     @Override
-    protected void setParameterImpl(final PreparedStatement stmt, final int index, final T value)
-            throws SQLException {
+    protected void doSet(final PreparedStatement stmt, final int parameterIndex, final T value) throws SQLException {
         final OutputInputStream out = new OutputInputStream();
         try {
             jsonSerializer.writeObject(out, value);
         } catch (final IOException exc) {
             throw new SQLException("failed to write json", exc);
         }
-        stmt.setBinaryStream(index, out.getInputStream());
+        stmt.setBinaryStream(parameterIndex, out.getInputStream());
     }
 }

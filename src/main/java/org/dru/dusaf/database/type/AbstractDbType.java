@@ -5,28 +5,18 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLType;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 public abstract class AbstractDbType<T> implements DbType<T> {
-    private static final Supplier<?> NULL_SUPPLIER = () -> null;
-
-    @SuppressWarnings("unchecked")
-    private static <T> Supplier<T> getNullSupplier() {
-        return (Supplier<T>) NULL_SUPPLIER;
-    }
-
     private final SQLType sqlType;
-    private final boolean primitive;
     private final boolean variableLength;
 
-    protected AbstractDbType(final SQLType sqlType, final boolean primitive, final boolean variableLength) {
+    protected AbstractDbType(final SQLType sqlType, final boolean variableLength) {
         this.sqlType = Objects.requireNonNull(sqlType, "sqlType");
-        this.primitive = primitive;
         this.variableLength = variableLength;
     }
 
     protected AbstractDbType(final SQLType sqlType) {
-        this(sqlType, true, false);
+        this(sqlType, false);
     }
 
     @Override
@@ -35,36 +25,23 @@ public abstract class AbstractDbType<T> implements DbType<T> {
     }
 
     @Override
-    public boolean isPrimitive() {
-        return primitive;
-    }
-
-    @Override
     public final boolean isVariableLength() {
         return variableLength;
     }
 
     @Override
-    public final T getResult(final ResultSet rset, final int index, final Supplier<T> supplier)
-            throws SQLException {
+    public final T get(final ResultSet rset, final int columnIndex) throws SQLException {
         Objects.requireNonNull(rset, "rset");
-        Objects.requireNonNull(supplier, "supplier");
-        final T result = getResultImpl(rset, index);
-        return (result == null || rset.wasNull() ? supplier.get() : result);
+        return doGet(rset, columnIndex);
     }
 
     @Override
-    public final T getResult(final ResultSet rset, final int index) throws SQLException {
-        return getResult(rset, index, getNullSupplier());
-    }
-
-    @Override
-    public final void setParameter(final PreparedStatement stmt, final int index, final T value)
-            throws SQLException {
+    public final void set(final PreparedStatement stmt, final int parameterIndex, final T value) throws SQLException {
+        Objects.requireNonNull(stmt, "stmt");
         if (value != null) {
-            setParameterImpl(stmt, index, value);
+            doSet(stmt, parameterIndex, value);
         } else {
-            stmt.setNull(index, getSQLType().getVendorTypeNumber());
+            stmt.setNull(parameterIndex, getSQLType().getVendorTypeNumber());
         }
     }
 
@@ -77,7 +54,12 @@ public abstract class AbstractDbType<T> implements DbType<T> {
         }
     }
 
-    protected abstract T getResultImpl(ResultSet rset, int index) throws SQLException;
+    @Override
+    public String toString() {
+        return sqlType.getName() + (variableLength ? "(n)" : "");
+    }
 
-    protected abstract void setParameterImpl(PreparedStatement stmt, int index, T value) throws SQLException;
+    protected abstract T doGet(ResultSet rset, int columnIndex) throws SQLException;
+
+    protected abstract void doSet(PreparedStatement stmt, int parameterIndex, T value) throws SQLException;
 }

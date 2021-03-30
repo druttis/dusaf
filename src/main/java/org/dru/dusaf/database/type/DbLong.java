@@ -13,13 +13,12 @@ public final class DbLong extends AbstractDbType<Long> {
     }
 
     @Override
-    protected Long getResultImpl(final ResultSet rset, final int index) throws SQLException {
-        return rset.getLong(index);
+    protected Long doGet(final ResultSet rset, final int columnIndex) throws SQLException {
+        return rset.getLong(columnIndex);
     }
 
     @Override
-    protected void setParameterImpl(final PreparedStatement stmt, final int index, final Long value)
-            throws SQLException {
-        stmt.setLong(index, value);
+    protected void doSet(final PreparedStatement stmt, final int parameterIndex, final Long value) throws SQLException {
+        stmt.setLong(parameterIndex, value);
     }
 }

@@ -9,17 +9,17 @@ public final class DbString extends AbstractDbType<String> {
     public static final DbString INSTANCE = new DbString();
 
     private DbString() {
-        super(JDBCType.VARCHAR, true, true);
+        super(JDBCType.VARCHAR, true);
     }
 
     @Override
-    protected String getResultImpl(final ResultSet rset, final int index) throws SQLException {
-        return rset.getString(index);
+    protected String doGet(final ResultSet rset, final int columnIndex) throws SQLException {
+        return rset.getString(columnIndex);
     }
 
     @Override
-    protected void setParameterImpl(final PreparedStatement stmt, final int index, final String value)
+    protected void doSet(final PreparedStatement stmt, final int parameterIndex, final String value)
             throws SQLException {
-        stmt.setString(index, value);
+        stmt.setString(parameterIndex, value);
     }
 }

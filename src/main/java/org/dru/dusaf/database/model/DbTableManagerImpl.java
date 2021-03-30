@@ -16,12 +16,11 @@ public final class DbTableManagerImpl implements DbTableManager {
     }
 
     @Override
-    public void createTableIfNotExist(final DbExecutor executor, final int shard, final DbTable<?> table) {
+    public void createTableIfNotExist(final DbExecutor executor, final int shard, final DbTable table) {
         if (visited.add(new Entry(executor, shard))) {
             try {
                 executor.update(shard, conn -> {
                     final String ddl = table.getDDL();
-                    System.out.println(ddl);
                     try (final PreparedStatement stmt = conn.prepareStatement(ddl)) {
                         stmt.execute();
                     }

@@ -13,13 +13,13 @@ public final class DbBoolean extends AbstractDbType<Boolean> {
     }
 
     @Override
-    protected Boolean getResultImpl(final ResultSet rset, final int index) throws SQLException {
-        return rset.getBoolean(index);
+    protected Boolean doGet(final ResultSet rset, final int columnIndex) throws SQLException {
+        return rset.getBoolean(columnIndex);
     }
 
     @Override
-    protected void setParameterImpl(final PreparedStatement stmt, final int index, final Boolean value)
+    protected void doSet(final PreparedStatement stmt, final int parameterIndex, final Boolean value)
             throws SQLException {
-        stmt.setBoolean(index, value);
+        stmt.setBoolean(parameterIndex, value);
     }
 }

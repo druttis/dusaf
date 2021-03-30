@@ -13,13 +13,12 @@ public final class DbByte extends AbstractDbType<Byte> {
     }
 
     @Override
-    protected Byte getResultImpl(final ResultSet rset, final int index) throws SQLException {
-        return rset.getByte(index);
+    protected Byte doGet(final ResultSet rset, final int columnIndex) throws SQLException {
+        return rset.getByte(columnIndex);
     }
 
     @Override
-    protected void setParameterImpl(final PreparedStatement stmt, final int index, final Byte value)
-            throws SQLException {
-        stmt.setByte(index, value);
+    protected void doSet(final PreparedStatement stmt, final int parameterIndex, final Byte value) throws SQLException {
+        stmt.setByte(parameterIndex, value);
     }
 }

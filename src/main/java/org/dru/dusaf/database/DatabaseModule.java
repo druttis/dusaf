@@ -1,12 +1,11 @@
 package org.dru.dusaf.database;
 
 import org.dru.dusaf.cache.CacheModule;
-import org.dru.dusaf.cache.LruCacheFactory;
 import org.dru.dusaf.database.config.DbClusterConfig;
 import org.dru.dusaf.database.executor.DbExecutorProvider;
 import org.dru.dusaf.database.executor.DbExecutorProviderImpl;
-import org.dru.dusaf.database.model.DbTableFactory;
-import org.dru.dusaf.database.model.DbTableFactoryImpl;
+import org.dru.dusaf.database.model.DbSystem;
+import org.dru.dusaf.database.model.DbSystemImpl;
 import org.dru.dusaf.database.model.DbTableManager;
 import org.dru.dusaf.database.model.DbTableManagerImpl;
 import org.dru.dusaf.database.pool.DbPoolManager;
@@ -55,8 +54,8 @@ public final class DatabaseModule implements Module {
     @Provides
     @Singleton
     @Expose
-    public DbTableFactory getTableFactory(final DbTypes dbTypes) {
-        return new DbTableFactoryImpl(dbTypes);
+    public DbSystem getTableFactory(final DbTypes dbTypes) {
+        return new DbSystemImpl(dbTypes);
     }
 
     @Provides
@@ -71,10 +70,9 @@ public final class DatabaseModule implements Module {
     @Expose
     public DbStoreFactory getDbStoreFactory(final DbExecutorProvider dbExecutorProvider,
                                             final TimeSupplier timeSupplier,
-                                            final DbTableFactory dbTableFactory,
-                                            final DbTableManager dbTableManager,
-                                            final LruCacheFactory lruCacheFactory) {
-        return new DbStoreFactoryImpl(dbExecutorProvider, timeSupplier, dbTableFactory, dbTableManager, lruCacheFactory);
+                                            final DbSystem dbSystem,
+                                            final DbTableManager dbTableManager) {
+        return new DbStoreFactoryImpl(dbExecutorProvider, timeSupplier, dbSystem, dbTableManager);
     }
 
     @Inject

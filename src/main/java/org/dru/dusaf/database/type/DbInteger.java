@@ -13,13 +13,13 @@ public final class DbInteger extends AbstractDbType<Integer> {
     }
 
     @Override
-    protected Integer getResultImpl(final ResultSet rset, final int index) throws SQLException {
-        return rset.getInt(index);
+    protected Integer doGet(final ResultSet rset, final int columnIndex) throws SQLException {
+        return rset.getInt(columnIndex);
     }
 
     @Override
-    protected void setParameterImpl(final PreparedStatement stmt, final int index, final Integer value)
+    protected void doSet(final PreparedStatement stmt, final int parameterIndex, final Integer value)
             throws SQLException {
-        stmt.setInt(index, value);
+        stmt.setInt(parameterIndex, value);
     }
 }

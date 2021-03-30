@@ -13,13 +13,13 @@ public final class DbFloat extends AbstractDbType<Float> {
     }
 
     @Override
-    protected Float getResultImpl(final ResultSet rset, final int index) throws SQLException {
-        return rset.getFloat(index);
+    protected Float doGet(final ResultSet rset, final int columnIndex) throws SQLException {
+        return rset.getFloat(columnIndex);
     }
 
     @Override
-    protected void setParameterImpl(final PreparedStatement stmt, final int index, final Float value)
+    protected void doSet(final PreparedStatement stmt, final int parameterIndex, final Float value)
             throws SQLException {
-        stmt.setFloat(index, value);
+        stmt.setFloat(parameterIndex, value);
     }
 }
