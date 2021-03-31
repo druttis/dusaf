@@ -21,6 +21,7 @@ public final class DbTableManagerImpl implements DbTableManager {
             try {
                 executor.update(shard, conn -> {
                     final String ddl = table.getDDL();
+                    System.out.println(ddl);
                     try (final PreparedStatement stmt = conn.prepareStatement(ddl)) {
                         stmt.execute();
                     }

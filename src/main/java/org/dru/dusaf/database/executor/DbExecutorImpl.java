@@ -17,6 +17,11 @@ public final class DbExecutorImpl implements DbExecutor {
     }
 
     @Override
+    public int getNumShards() {
+        return poolManager.getPools(clusterName).size();
+    }
+
+    @Override
     public <T> T query(final int shard, final ThrowingFunction<Connection, T, SQLException> command)
             throws SQLException {
         final Connection conn = acquire(shard);

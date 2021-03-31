@@ -8,6 +8,7 @@ import org.dru.dusaf.functional.ThrowingBiConsumer;
 import org.dru.dusaf.functional.ThrowingFunction;
 import org.dru.dusaf.reflection.ReflectionUtils;
 import org.dru.dusaf.time.TimeSupplier;
+import org.dru.dusaf.util.JumpConsistentHash;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -40,7 +41,7 @@ public final class DbStoreImpl<K, V> implements DbStore<K, V> {
         this.timeSupplier = timeSupplier;
         final DbTemplate tableBuilder = tableBuilderFactory.newTemplate(name);
         dbKey = tableBuilder.newColumn("key", keyType, DbModifier.PRIMARY);
-        dbValue = tableBuilder.newColumn("value", valueType, DbModifier.NOT_NULL);
+        dbValue = tableBuilder.newColumn("value", valueType, 65535, DbModifier.NOT_NULL);
         dbCreated = tableBuilder.newColumn("created", Long.class, DbModifier.NOT_NULL);
         dbUpdated = tableBuilder.newColumn("updated", Long.class);
         dbTable = tableBuilder.build();
@@ -56,7 +57,19 @@ public final class DbStoreImpl<K, V> implements DbStore<K, V> {
     @Override
     public V get(final K key) {
         try {
-            return dbExecutor.query(0, conn -> get(conn, key, false));
+            int shardNum = JumpConsistentHash.hash(key, dbExecutor.getNumShards());
+            V value = dbExecutor.query(shardNum, conn -> get(conn, key, false));
+            if (value != null) {
+                return value;
+            }
+            int[] shardNums = JumpConsistentHash.hashes(key, dbExecutor.getNumShards());
+            for (int x : shardNums) {
+                value = dbExecutor.query(x, conn -> get(conn, key, false));
+                if (value != null) {
+                    return value;
+                }
+            }
+            return null;
         } catch (final SQLException exc) {
             throw new RuntimeException(exc);
         }
@@ -299,11 +312,11 @@ public final class DbStoreImpl<K, V> implements DbStore<K, V> {
     }
 
     private void insert(final Connection conn, final K key, final V value) throws SQLException {
-        System.out.println(insertSql);
         try (final PreparedStatement stmt = insertSql.prepareStatement(conn)) {
             insertSql.set(stmt, dbKey, 0, key);
             insertSql.set(stmt, dbValue, 0, value);
             insertSql.set(stmt, dbCreated, 0, timeSupplier.get().toEpochMilli());
+            stmt.executeUpdate();
         }
     }
 
@@ -315,6 +328,7 @@ public final class DbStoreImpl<K, V> implements DbStore<K, V> {
                 insertSql.set(stmt, dbCreated, 0, timeSupplier.get().toEpochMilli());
                 stmt.addBatch();
             }));
+            stmt.executeBatch();
         }
     }
 

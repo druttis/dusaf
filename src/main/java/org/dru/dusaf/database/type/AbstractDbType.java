@@ -7,26 +7,62 @@ import java.sql.SQLType;
 import java.util.Objects;
 
 public abstract class AbstractDbType<T> implements DbType<T> {
+    private final Class<T> type;
     private final SQLType sqlType;
     private final boolean variableLength;
+    private final int minLength;
+    private final int maxLength;
 
-    protected AbstractDbType(final SQLType sqlType, final boolean variableLength) {
-        this.sqlType = Objects.requireNonNull(sqlType, "sqlType");
+    protected AbstractDbType(final Class<T> type, final SQLType sqlType, final boolean variableLength,
+                             final int minLength, final int maxLength) {
+        Objects.requireNonNull(type, "type");
+        Objects.requireNonNull(sqlType, "sqlType");
+        if (variableLength) {
+            if (minLength < 1) {
+                throw new IllegalArgumentException("minLength has to be 1 or greater: " + minLength);
+            }
+            if (maxLength < minLength) {
+                throw new IllegalArgumentException("maxLength has to be greater or equal to minLength: " +
+                        "maxLength=" + maxLength + ", minLength=" + minLength);
+            }
+        } else{
+            if (minLength != 0) {
+                throw new IllegalArgumentException("minLength has to be 0: " + minLength);
+            }
+            if (maxLength != 0) {
+                throw new IllegalArgumentException("maxLength has to be 0: " + maxLength);
+            }
+        }
+        this.type = type;
+        this.sqlType = sqlType;
         this.variableLength = variableLength;
-    }
-
-    protected AbstractDbType(final SQLType sqlType) {
-        this(sqlType, false);
+        this.minLength = minLength;
+        this.maxLength = maxLength;
     }
 
     @Override
-    public final SQLType getSQLType() {
+    public Class<T> getType() {
+        return type;
+    }
+
+    @Override
+    public final SQLType getSqlType() {
         return sqlType;
     }
 
     @Override
     public final boolean isVariableLength() {
         return variableLength;
+    }
+
+    @Override
+    public final int getMinLength() {
+        return minLength;
+    }
+
+    @Override
+    public final int getMaxLength() {
+        return maxLength;
     }
 
     @Override
@@ -41,22 +77,8 @@ public abstract class AbstractDbType<T> implements DbType<T> {
         if (value != null) {
             doSet(stmt, parameterIndex, value);
         } else {
-            stmt.setNull(parameterIndex, getSQLType().getVendorTypeNumber());
+            stmt.setNull(parameterIndex, getSqlType().getVendorTypeNumber());
         }
-    }
-
-    @Override
-    public final String getDDL(final int length) {
-        if (isVariableLength()) {
-            return String.format("%s(%d)", getSQLType().getName(), length);
-        } else {
-            return getSQLType().getName();
-        }
-    }
-
-    @Override
-    public String toString() {
-        return sqlType.getName() + (variableLength ? "(n)" : "");
     }
 
     protected abstract T doGet(ResultSet rset, int columnIndex) throws SQLException;

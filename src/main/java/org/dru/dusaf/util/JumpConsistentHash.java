@@ -1,6 +1,6 @@
 package org.dru.dusaf.util;
 
-import java.util.Objects;
+import java.util.*;
 
 public final class JumpConsistentHash {
     private JumpConsistentHash() {
@@ -10,6 +10,18 @@ public final class JumpConsistentHash {
     public static int hash(final Object key, final int numBuckets) {
         Objects.requireNonNull(key, "key");
         return hash(key.hashCode(), numBuckets);
+    }
+
+    public static int[] hashes(final Object key, final int numBuckets) {
+        final List<Integer> result = new ArrayList<>();
+        final Set<Integer> visited = new HashSet<>();
+        for (int x = numBuckets; x > 0; x--) {
+            final int y = hash(key, x);
+            if (visited.add(y)) {
+                result.add(y);
+            }
+        }
+        return result.stream().mapToInt(Integer::intValue).toArray();
     }
 
     public static int hash(final long key, final int numBuckets) {
@@ -25,6 +37,18 @@ public final class JumpConsistentHash {
             j = Math.round((b + 1L) * (2147483648L / dbl((k >>> 33) + 1L)));
         }
         return (int) b;
+    }
+
+    public static int[] hashes(final long key, final int numBuckets) {
+        final List<Integer> result = new ArrayList<>();
+        final Set<Integer> visited = new HashSet<>();
+        for (int x = numBuckets; x > 0; x--) {
+            final int y = hash(key, x);
+            if (visited.add(y)) {
+                result.add(y);
+            }
+        }
+        return result.stream().mapToInt(Integer::intValue).toArray();
     }
 
     private static double dbl(final long sl) {

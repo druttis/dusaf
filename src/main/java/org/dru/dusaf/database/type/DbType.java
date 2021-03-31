@@ -4,16 +4,27 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLType;
-import java.util.function.Supplier;
 
 public interface DbType<T> {
-    SQLType getSQLType();
+    static boolean contains(DbType<?> type, int length) {
+        return (type.getMinLength() <= length && length <= type.getMaxLength());
+    }
+
+    static boolean intersects(DbType<?> a, DbType<?> b) {
+        return (b.getMaxLength() >= a.getMinLength() && a.getMaxLength() >= b.getMinLength());
+    }
+
+    Class<T> getType();
+
+    SQLType getSqlType();
 
     boolean isVariableLength();
+
+    int getMinLength();
+
+    int getMaxLength();
 
     T get(ResultSet rset, int columnIndex) throws SQLException;
 
     void set(PreparedStatement stmt, int parameterIndex, T value) throws SQLException;
-
-    String getDDL(int length);
 }

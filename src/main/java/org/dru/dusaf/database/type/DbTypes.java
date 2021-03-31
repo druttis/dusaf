@@ -1,7 +1,7 @@
 package org.dru.dusaf.database.type;
 
 public interface DbTypes {
-    <T> void registerDbType(final Class<T> type, final DbType<T> dbType);
+    <T> void register(DbType<T> type);
 
-    <T> DbType<T> getDbType(Class<T> type);
+    <T> DbType<T> of(Class<T> type, int length);
 }

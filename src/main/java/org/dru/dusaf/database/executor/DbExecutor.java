@@ -7,6 +7,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 public interface DbExecutor {
+    int getNumShards();
+
     <T> T query(int shard, ThrowingFunction<Connection, T, SQLException> command) throws SQLException;
 
     <T> T update(int shard, ThrowingFunction<Connection, T, SQLException> command) throws SQLException;

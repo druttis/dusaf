@@ -9,14 +9,12 @@ import java.sql.SQLException;
 
 public final class DbColumnImpl<T> extends AbstractDbObject implements DbColumn<T> {
     private final DbVariable<T> variable;
-    private final int length;
     private final DbModifier modifier;
 
     public DbColumnImpl(final String name, final DbTypes dbTypes, final Class<T> type, final int length,
                         final DbModifier modifier) {
         super(name);
-        variable = new DbVariableImpl<>(dbTypes, type);
-        this.length = length;
+        variable = new DbVariableImpl<>(dbTypes, type, length);
         this.modifier = modifier;
     }
 
@@ -24,7 +22,11 @@ public final class DbColumnImpl<T> extends AbstractDbObject implements DbColumn<
     public String getDDL() {
         final StringBuilder sb = new StringBuilder(getDbName());
         sb.append(' ');
-        sb.append(getDbType().getDDL(getLength()));
+        if (getDbType().isVariableLength()) {
+            sb.append(String.format("%s(%d)", getDbType().getSqlType().getName(), getLength()));
+        } else {
+            sb.append(String.format("%s", getDbType().getSqlType().getName()));
+        }
         if (isNotNull()) {
             sb.append(" NOT NULL");
         }
@@ -43,7 +45,7 @@ public final class DbColumnImpl<T> extends AbstractDbObject implements DbColumn<
 
     @Override
     public int getLength() {
-        return length;
+        return variable.getLength();
     }
 
     @Override

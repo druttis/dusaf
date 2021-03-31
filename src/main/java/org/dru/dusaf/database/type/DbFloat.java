@@ -1,15 +1,18 @@
 package org.dru.dusaf.database.type;
 
+import com.mysql.cj.MysqlType;
+
 import java.sql.JDBCType;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public final class DbFloat extends AbstractDbType<Float> {
-    public static final DbFloat INSTANCE = new DbFloat();
+    public static final DbFloat BOXED = new DbFloat(Float.class);
+    public static final DbFloat PRIMITIVE = new DbFloat(float.class);
 
-    private DbFloat() {
-        super(JDBCType.FLOAT);
+    private DbFloat(final Class<Float> type) {
+        super(type, MysqlType.FLOAT, false, 0, 0);
     }
 
     @Override

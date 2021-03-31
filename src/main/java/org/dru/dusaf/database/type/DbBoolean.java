@@ -1,15 +1,15 @@
 package org.dru.dusaf.database.type;
 
-import java.sql.JDBCType;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import com.mysql.cj.MysqlType;
+
+import java.sql.*;
 
 public final class DbBoolean extends AbstractDbType<Boolean> {
-    public static final DbBoolean INSTANCE = new DbBoolean();
+    public static final DbBoolean BOXED = new DbBoolean(Boolean.class);
+    public static final DbBoolean PRIMITIVE = new DbBoolean(boolean.class);
 
-    private DbBoolean() {
-        super(JDBCType.BIT);
+    private DbBoolean(final Class<Boolean> type) {
+        super(type, MysqlType.BIT, false, 0, 0);
     }
 
     @Override

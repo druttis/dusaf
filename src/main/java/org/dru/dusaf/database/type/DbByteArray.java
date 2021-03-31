@@ -1,20 +1,21 @@
 package org.dru.dusaf.database.type;
 
+import com.mysql.cj.MysqlType;
 import org.dru.dusaf.util.IOUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.JDBCType;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 public final class DbByteArray extends AbstractDbType<byte[]> {
-    public static final DbByteArray INSTANCE = new DbByteArray();
+    public static final DbByteArray TINY = new DbByteArray(MysqlType.TINYBLOB, 1, 255);
+    public static final DbByteArray SMALL = new DbByteArray(MysqlType.BLOB, 256, 65535);
+    public static final DbByteArray MEDIUM = new DbByteArray(MysqlType.MEDIUMBLOB, 65536, 16777215);
+    public static final DbByteArray LONG = new DbByteArray(MysqlType.LONGBLOB, 16777216, Integer.MAX_VALUE);
 
-    private DbByteArray() {
-        super(JDBCType.BLOB, true);
+    private DbByteArray(final SQLType sqlType, final int minLength, final int maxLength) {
+        super(byte[].class, sqlType, true, minLength, maxLength);
     }
 
     @Override

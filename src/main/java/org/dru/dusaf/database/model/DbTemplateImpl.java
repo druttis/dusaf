@@ -53,4 +53,10 @@ public final class DbTemplateImpl implements DbTemplate {
     public DbTable build() {
         return new DbTableImpl(name, new ArrayList<>(columns));
     }
+
+    private void requireLength(final Class<?> type) {
+        if (dbTypes.of(type, 0).isVariableLength()) {
+            throw new RuntimeException("length required");
+        }
+    }
 }

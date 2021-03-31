@@ -11,6 +11,8 @@ public interface DbVariable<T> {
 
     DbType<T> getDbType();
 
+    int getLength();
+
     T get(ResultSet rset, int columnIndex) throws SQLException;
 
     void set(PreparedStatement stmt, int parameterIndex, T value) throws SQLException;

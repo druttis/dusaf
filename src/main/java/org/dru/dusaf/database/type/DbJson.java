@@ -5,24 +5,20 @@ import org.dru.dusaf.json.JsonSerializer;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.JDBCType;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLType;
 import java.util.Objects;
 
 public final class DbJson<T> extends AbstractDbType<T> {
-    public static <T> DbJson<T> instance(final Class<T> type, final JsonSerializer jsonSerializer) {
-        return new DbJson<>(type, jsonSerializer);
-    }
-
-    private final Class<T> type;
     private final JsonSerializer jsonSerializer;
 
-    private DbJson(final Class<T> type, final JsonSerializer jsonSerializer) {
-        super(JDBCType.BLOB, true);
-        this.type = Objects.requireNonNull(type, "type");
-        this.jsonSerializer = Objects.requireNonNull(jsonSerializer, "jsonSerializer");
+    public DbJson(final Class<T> type, final SQLType sqlType, final int minLength, final int maxLength,
+                  final JsonSerializer jsonSerializer) {
+        super(type, sqlType, true, minLength, maxLength);
+        Objects.requireNonNull(jsonSerializer, "jsonSerializer");
+        this.jsonSerializer = jsonSerializer;
     }
 
     @Override
@@ -32,7 +28,7 @@ public final class DbJson<T> extends AbstractDbType<T> {
             return null;
         }
         try {
-            return jsonSerializer.readObject(in, type);
+            return jsonSerializer.readObject(in, getType());
         } catch (final IOException exc) {
             throw new SQLException("failed to read json", exc);
         }

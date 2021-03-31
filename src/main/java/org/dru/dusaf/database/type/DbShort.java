@@ -6,10 +6,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public final class DbShort extends AbstractDbType<Short> {
-    public static final DbShort INSTANCE = new DbShort();
+    public static final DbShort BOXED = new DbShort(Short.class);
+    public static final DbShort PRIMITIVE = new DbShort(short.class);
 
-    private DbShort() {
-        super(JDBCType.SMALLINT);
+    private DbShort(final Class<Short> type) {
+        super(type, JDBCType.SMALLINT, false, 0, 0);
     }
 
     @Override

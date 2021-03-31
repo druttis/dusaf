@@ -18,7 +18,7 @@ public final class DbSystemImpl implements DbSystem {
     }
 
     @Override
-    public <T> DbVariable<T> newVariable(final Class<T> type) {
-        return new DbVariableImpl<>(dbTypes, type);
+    public <T> DbVariable<T> newVariable(final Class<T> type, final int length) {
+        return new DbVariableImpl<>(dbTypes, type, length);
     }
 }
