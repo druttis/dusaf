@@ -1,9 +1,6 @@
 package org.dru.dusaf.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 
 public final class IOUtils {
     public static long copy(final InputStream in, final OutputStream out) throws IOException {
@@ -21,6 +18,16 @@ public final class IOUtils {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         copy(in, out);
         return out.toByteArray();
+    }
+
+    public static void close(final Closeable closeable) {
+        if (closeable != null) {
+            try {
+                closeable.close();
+            } catch (final IOException exc) {
+                // do nothing!
+            }
+        }
     }
 
     private IOUtils() {
