@@ -2,14 +2,14 @@ package org.dru.dusaf.util;
 
 import java.util.Arrays;
 
-public class Bits {
+public class FastBitSet {
     private long[] bits = {};
 
-    public Bits(final int nbits) {
+    public FastBitSet(final int nbits) {
         ensureCapacity(nbits >>> 6);
     }
 
-    public Bits() {
+    public FastBitSet() {
     }
 
     public boolean get(final int index) {
@@ -40,7 +40,7 @@ public class Bits {
         Arrays.fill(bits, 0L);
     }
 
-    public boolean intersects(final Bits other) {
+    public boolean intersects(final FastBitSet other) {
         long[] bits = this.bits;
         long[] otherBits = other.bits;
         final int length = Math.min(bits.length, otherBits.length);
@@ -52,7 +52,7 @@ public class Bits {
         return false;
     }
 
-    public boolean containsAll(final Bits other) {
+    public boolean containsAll(final FastBitSet other) {
         long[] bits = this.bits;
         long[] otherBits = other.bits;
         int otherBitsLength = otherBits.length;
@@ -115,7 +115,7 @@ public class Bits {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        final Bits other = (Bits) obj;
+        final FastBitSet other = (FastBitSet) obj;
         final long[] otherBits = other.bits;
         int commonWords = Math.min(bits.length, otherBits.length);
         for (int i = 0; commonWords > i; i++) {

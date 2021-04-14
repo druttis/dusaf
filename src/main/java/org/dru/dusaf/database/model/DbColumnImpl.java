@@ -3,6 +3,7 @@ package org.dru.dusaf.database.model;
 import org.dru.dusaf.database.type.DbType;
 import org.dru.dusaf.database.type.DbTypes;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,22 +12,18 @@ public final class DbColumnImpl<T> extends AbstractDbObject implements DbColumn<
     private final DbVariable<T> variable;
     private final DbModifier modifier;
 
-    public DbColumnImpl(final String name, final DbTypes dbTypes, final Class<T> type, final int length,
+    public DbColumnImpl(final String name, final DbTypes dbTypes, final Class<T> type, final int capacity,
                         final DbModifier modifier) {
         super(name);
-        variable = new DbVariableImpl<>(dbTypes, type, length);
+        variable = new DbVariableImpl<>(dbTypes, type, capacity);
         this.modifier = modifier;
     }
 
     @Override
-    public String getDDL() {
+    public String getDDL(final Connection conn) throws SQLException {
         final StringBuilder sb = new StringBuilder(getDbName());
         sb.append(' ');
-        if (getDbType().isVariableLength()) {
-            sb.append(String.format("%s(%d)", getDbType().getSqlType().getName(), getLength()));
-        } else {
-            sb.append(String.format("%s", getDbType().getSqlType().getName()));
-        }
+        sb.append(getDbType().getDDL(conn));
         if (isNotNull()) {
             sb.append(" NOT NULL");
         }
@@ -44,8 +41,8 @@ public final class DbColumnImpl<T> extends AbstractDbObject implements DbColumn<
     }
 
     @Override
-    public int getLength() {
-        return variable.getLength();
+    public int getCapacity() {
+        return variable.getCapacity();
     }
 
     @Override

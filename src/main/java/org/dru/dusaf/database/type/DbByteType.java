@@ -1,18 +1,13 @@
 package org.dru.dusaf.database.type;
 
-import com.mysql.cj.MysqlType;
-
-import java.sql.JDBCType;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLType;
 
-public final class DbByte extends AbstractDbType<Byte> {
-    public static DbByte BOXED = new DbByte(Byte.class);
-    public static DbByte PRIMITIVE = new DbByte(byte.class);
-
-    private DbByte(final Class<Byte> type) {
-        super(type, MysqlType.TINYINT, false, 0, 0);
+public final class DbByteType extends AbstractDbType<Byte> {
+    public DbByteType(final SQLType sqlType, final int capacity) {
+        super(array(Byte.class, byte.class), sqlType, capacity);
     }
 
     @Override

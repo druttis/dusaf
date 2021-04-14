@@ -1,16 +1,13 @@
 package org.dru.dusaf.database.type;
 
-import java.sql.JDBCType;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLType;
 
-public final class DbInteger extends AbstractDbType<Integer> {
-    public static final DbInteger BOXED = new DbInteger(Integer.class);
-    public static final DbInteger PRIMITIVE = new DbInteger(int.class);
-
-    private DbInteger(final Class<Integer> type) {
-        super(type, JDBCType.INTEGER, false, 0, 0);
+public final class DbIntType extends AbstractDbType<Integer> {
+    public DbIntType(final SQLType sqlType, final int capacity) {
+        super(array(Integer.class, int.class), sqlType, capacity);
     }
 
     @Override

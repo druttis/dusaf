@@ -11,14 +11,14 @@ import java.util.Objects;
 public final class DbVariableImpl<T> implements DbVariable<T> {
     private final Class<T> type;
     private final DbType<T> dbType;
-    private final int length;
+    private final int capacity;
 
-    public DbVariableImpl(final DbTypes dbtypes, final Class<T> type, final int length) {
+    public DbVariableImpl(final DbTypes dbtypes, final Class<T> type, final int capacity) {
         Objects.requireNonNull(dbtypes, "dbTypes");
         Objects.requireNonNull(type, "type");
         this.type = type;
-        this.length = length;
-        dbType = dbtypes.of(type, getLength());
+        this.capacity = capacity;
+        dbType = dbtypes.getType(type, getCapacity());
     }
 
     @Override
@@ -32,8 +32,8 @@ public final class DbVariableImpl<T> implements DbVariable<T> {
     }
 
     @Override
-    public int getLength() {
-        return length;
+    public int getCapacity() {
+        return capacity;
     }
 
     @Override

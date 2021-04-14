@@ -5,7 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public interface DbColumn<T> extends DbObject, DbVariable<T> {
-    int getLength();
+    int getCapacity();
 
     boolean isPrimary();
 

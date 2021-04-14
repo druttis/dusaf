@@ -10,7 +10,7 @@ public final class LruCacheFactoryImpl implements LruCacheFactory {
     }
 
     @Override
-    public <K, V> LruCache<K, V> newCache(final LruCacheConfig config, final CacheFetcher<K, V> fetcher) {
-        return new LruCache<>(config, fetcher, timeSupplier);
+    public <K, V> LruCache<K, V> newCache(final LruCacheConfig config) {
+        return new LruCache<>(config, timeSupplier);
     }
 }

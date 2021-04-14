@@ -8,14 +8,12 @@ import java.util.*;
 
 final class LruCache<K, V> implements Cache<K, V> {
     private final LruCacheConfig config;
-    private final CacheFetcher<K, V> fetcher;
     private final TimeSupplier timeSupplier;
     private final Object monitor;
     private final Map<K, Item<V>> cache;
 
-    LruCache(final LruCacheConfig config, final CacheFetcher<K, V> fetcher, final TimeSupplier timeSupplier) {
+    LruCache(final LruCacheConfig config, final TimeSupplier timeSupplier) {
         Objects.requireNonNull(config, "config");
-        Objects.requireNonNull(fetcher, "fetcher");
         Objects.requireNonNull(config.ttl(), "config.ttl()");
         if (config.capacity() < 1) {
             throw new IllegalArgumentException("config.capacity() has to be 1 or greater: " + config.capacity());
@@ -24,7 +22,6 @@ final class LruCache<K, V> implements Cache<K, V> {
             throw new IllegalArgumentException("config.ttl() has to be 1 or greater: " + config.ttl());
         }
         this.config = config;
-        this.fetcher = fetcher;
         this.timeSupplier = timeSupplier;
         monitor = new Object();
         cache = new LinkedHashMap<K, Item<V>>(config.capacity(), 0.75f, true) {
@@ -41,20 +38,20 @@ final class LruCache<K, V> implements Cache<K, V> {
     }
 
     @Override
-    public V get(final K key) {
+    public V get(final K key, final CacheFetcher<K, V> fetcher) {
         final V result;
         synchronized (monitor) {
-            result = getInternal(key);
+            result = getInternal(key, fetcher);
         }
         return result;
     }
 
     @Override
-    public Map<K, V> getAll(final Set<K> keys) {
+    public Map<K, V> getAll(final Set<K> keys, final CacheFetcher<K, V> fetcher) {
         final Map<K, V> result = new HashMap<>();
         synchronized (monitor) {
             keys.forEach(key -> {
-                final V value = getInternal(key);
+                final V value = getInternal(key, fetcher);
                 if (value != null) {
                     result.put(key, value);
                 }
@@ -99,28 +96,21 @@ final class LruCache<K, V> implements Cache<K, V> {
     }
 
     void clearExpired() {
-        final Instant now = getNow();
         synchronized (monitor) {
-            cache.values().removeIf(item -> {
-                if (hasExpired(item, now)) {
-                    return true;
-                } else {
-                    return false;
-                }
-            });
+            cache.values().removeIf(this::hasExpired);
         }
     }
 
-    private V getInternal(final K key) {
-        final Instant now = timeSupplier.get();
-        final Instant expires = getExpiry(now);
+    private V getInternal(final K key, final CacheFetcher<K, V> fetcher) {
         final Item<V> result = cache.compute(key, ($, item) -> {
-            if (item == null || hasExpired(item, now)) {
-                final V value = fetcher.fetch(key);
-                item = storeValue(expires, item, value);
+            if (item == null || hasExpired(item)) {
+                if (fetcher != null) {
+                    final V value = fetcher.fetch(key);
+                    item = storeValue(item, value);
+                }
             } else {
                 if (config.accessOrder()) {
-                    item.expires = expires;
+                    item.expires = getExpiry();
                 }
             }
             return item;
@@ -129,9 +119,7 @@ final class LruCache<K, V> implements Cache<K, V> {
     }
 
     private void putInternal(final K key, final V value) {
-        final Instant now = timeSupplier.get();
-        final Instant expires = getExpiry(now);
-        cache.compute(key, ($, item) -> storeValue(expires, item, value));
+        cache.compute(key, ($, item) -> storeValue(item, value));
     }
 
     private void removeInternal(final K key) {
@@ -142,19 +130,16 @@ final class LruCache<K, V> implements Cache<K, V> {
         return timeSupplier.get();
     }
 
-    private Instant getExpiry(final Instant from) {
-        return from.plus(config.ttl());
+    private Instant getExpiry() {
+        return getNow().plus(config.ttl());
     }
 
-    private boolean hasExpired(final Item<V> item, final Instant when) {
-        return item.expires.isAfter(when);
+    private boolean hasExpired(final Item<V> item) {
+        return item.expires.isBefore(getNow());
     }
 
-    private Duration getDuration(final Instant start) {
-        return Duration.between(start, getNow());
-    }
-
-    private Item<V> storeValue(final Instant expires, Item<V> item, final V value) {
+    private Item<V> storeValue(Item<V> item, final V value) {
+        final Instant expires = getExpiry();
         if (value != null || config.storeNull()) {
             if (item == null) {
                 item = new Item<>(value, expires);
@@ -162,8 +147,6 @@ final class LruCache<K, V> implements Cache<K, V> {
                 item.value = value;
                 item.expires = expires;
             }
-        } else if (item != null) {
-            item = null;
         }
         return item;
     }

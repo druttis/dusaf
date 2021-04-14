@@ -2,6 +2,10 @@ package org.dru.dusaf.database;
 
 import org.dru.dusaf.cache.CacheModule;
 import org.dru.dusaf.database.config.DbClusterConfig;
+import org.dru.dusaf.database.dialect.DbDialect;
+import org.dru.dusaf.database.dialect.DbDialects;
+import org.dru.dusaf.database.dialect.DbDialectsImpl;
+import org.dru.dusaf.database.dialect.mysql.MysqlDialect;
 import org.dru.dusaf.database.executor.DbExecutorProvider;
 import org.dru.dusaf.database.executor.DbExecutorProviderImpl;
 import org.dru.dusaf.database.model.DbSystem;
@@ -33,6 +37,19 @@ public final class DatabaseModule implements Module {
     @Provides
     @Singleton
     @Expose
+    public DbDialects getDbDialects() {
+        return new DbDialectsImpl();
+    }
+
+    @Provides
+    @Singleton
+    public MysqlDialect getMysqlDialect(final JsonSerializerSupplier jsonSerializerSupplier) {
+        return new MysqlDialect(jsonSerializerSupplier);
+    }
+
+    @Provides
+    @Singleton
+    @Expose
     public DbPoolManager getDbPoolManager(final TimeSupplier timeSupplier) {
         return new DbPoolManagerImpl(timeSupplier);
     }
@@ -47,8 +64,8 @@ public final class DatabaseModule implements Module {
     @Provides
     @Singleton
     @Expose
-    public DbTypes getDbTypes(final JsonSerializerSupplier jsonSerializerSupplier) {
-        return new DbTypesImpl(jsonSerializerSupplier);
+    public DbTypes getDbTypes(final DbDialects dialects) {
+        return new DbTypesImpl(dialects);
     }
 
     @Provides
@@ -78,5 +95,10 @@ public final class DatabaseModule implements Module {
     @Inject
     public void confDatabase(final DbPoolManager dbPoolManager, final JsonConf jsonConf) {
         Stream.of(jsonConf.get(DbClusterConfig[].class, "dusaf-database")).forEach(dbPoolManager::addConfig);
+    }
+
+    @Inject
+    public void registerMySqlDialect(final DbDialects dbDialects, final MysqlDialect mysqlDialect) {
+        dbDialects.registerDialect(mysqlDialect);
     }
 }

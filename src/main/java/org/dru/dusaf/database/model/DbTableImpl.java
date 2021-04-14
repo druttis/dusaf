@@ -1,5 +1,9 @@
 package org.dru.dusaf.database.model;
 
+import org.dru.dusaf.functional.ThrowingFunction;
+
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,12 +20,12 @@ public final class DbTableImpl extends AbstractDbObject implements DbTable {
     }
 
     @Override
-    public String getDDL() {
+    public String getDDL(final Connection conn) throws SQLException {
         final StringBuilder sb = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
         sb.append(getDbName());
         sb.append(" (\n");
         sb.append(getColumns().stream()
-                .map(DbColumn::getDDL)
+                .map(ThrowingFunction.wrap(dbColumn -> dbColumn.getDDL(conn)))
                 .collect(Collectors.joining(",\n")));
         if (!getPrimaryKeyColumns().isEmpty()) {
             sb.append(",\nPRIMARY KEY (");

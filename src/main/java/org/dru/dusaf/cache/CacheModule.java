@@ -10,7 +10,7 @@ import org.dru.dusaf.time.TimeSupplier;
 import javax.inject.Singleton;
 
 @DependsOn({TimeModule.class})
-public class CacheModule implements Module {
+public final class CacheModule implements Module {
     @Provides
     @Singleton
     @Expose

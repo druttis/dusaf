@@ -4,9 +4,9 @@ import java.util.Map;
 import java.util.Set;
 
 public interface Cache<K, V> {
-    V get(K key);
+    V get(K key, CacheFetcher<K, V> fetcher);
 
-    Map<K, V> getAll(Set<K> keys);
+    Map<K, V> getAll(Set<K> keys, CacheFetcher<K, V> fetcher);
 
     void put(K key, V value);
 

@@ -1,48 +1,36 @@
 package org.dru.dusaf.database.type;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLType;
+import org.dru.dusaf.database.sql.SQLCondition;
+
+import java.sql.*;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 
 public abstract class AbstractDbType<T> implements DbType<T> {
-    private final Class<T> type;
+    private final Class<?>[] javaTypes;
     private final SQLType sqlType;
-    private final boolean variableLength;
-    private final int minLength;
-    private final int maxLength;
+    private final int capacity;
 
-    protected AbstractDbType(final Class<T> type, final SQLType sqlType, final boolean variableLength,
-                             final int minLength, final int maxLength) {
-        Objects.requireNonNull(type, "type");
-        Objects.requireNonNull(sqlType, "sqlType");
-        if (variableLength) {
-            if (minLength < 1) {
-                throw new IllegalArgumentException("minLength has to be 1 or greater: " + minLength);
-            }
-            if (maxLength < minLength) {
-                throw new IllegalArgumentException("maxLength has to be greater or equal to minLength: " +
-                        "maxLength=" + maxLength + ", minLength=" + minLength);
-            }
-        } else{
-            if (minLength != 0) {
-                throw new IllegalArgumentException("minLength has to be 0: " + minLength);
-            }
-            if (maxLength != 0) {
-                throw new IllegalArgumentException("maxLength has to be 0: " + maxLength);
-            }
-        }
-        this.type = type;
-        this.sqlType = sqlType;
-        this.variableLength = variableLength;
-        this.minLength = minLength;
-        this.maxLength = maxLength;
+    protected static Class<?>[] array(final Class<?>... cl) {
+        return cl;
     }
 
+    public AbstractDbType(final Class<?>[] javaTypes, final SQLType sqlType, final int capacity) {
+        Objects.requireNonNull(javaTypes, "javaTypes");
+        this.javaTypes = javaTypes;
+        this.sqlType = sqlType;
+        this.capacity = capacity;
+    }
+
+    public AbstractDbType(final Class<?> javaType, final SQLType sqlType, final int capacity) {
+        this(array(javaType), sqlType, capacity);
+    }
+
+
     @Override
-    public Class<T> getType() {
-        return type;
+    public final Class<?>[] getJavaTypes() {
+        return Arrays.copyOf(javaTypes, javaTypes.length);
     }
 
     @Override
@@ -51,18 +39,13 @@ public abstract class AbstractDbType<T> implements DbType<T> {
     }
 
     @Override
-    public final boolean isVariableLength() {
-        return variableLength;
+    public final int getCapacity() {
+        return capacity;
     }
 
     @Override
-    public final int getMinLength() {
-        return minLength;
-    }
-
-    @Override
-    public final int getMaxLength() {
-        return maxLength;
+    public String getDDL(final Connection conn) throws SQLException {
+        return getSqlType().getName();
     }
 
     @Override
@@ -77,11 +60,37 @@ public abstract class AbstractDbType<T> implements DbType<T> {
         if (value != null) {
             doSet(stmt, parameterIndex, value);
         } else {
-            stmt.setNull(parameterIndex, getSqlType().getVendorTypeNumber());
+            doSetNull(stmt, parameterIndex);
         }
+    }
+
+    @Override
+    public final void set(final PreparedStatement stmt, final int parameterIndex, final Collection<T> values)
+            throws SQLException {
+        Objects.requireNonNull(stmt, "stmt");
+        if (values != null) {
+            doSet(stmt, parameterIndex, values);
+        } else {
+            doSetNull(stmt, parameterIndex);
+        }
+    }
+
+    @Override
+    public final void setNull(PreparedStatement stmt, int parameterIndex) throws SQLException {
+        Objects.requireNonNull(stmt, "stmt");
+        doSetNull(stmt, parameterIndex);
+    }
+
+    protected void doSet(PreparedStatement stmt, int parameterIndex, Collection<T> values) throws SQLException {
+        final Array array = stmt.getConnection().createArrayOf(getSqlType().getName(), values.toArray());
+        stmt.setArray(parameterIndex, array);
     }
 
     protected abstract T doGet(ResultSet rset, int columnIndex) throws SQLException;
 
     protected abstract void doSet(PreparedStatement stmt, int parameterIndex, T value) throws SQLException;
+
+    private void doSetNull(final PreparedStatement stmt, final int parameterIndex) throws SQLException {
+        stmt.setNull(parameterIndex, getSqlType().getVendorTypeNumber());
+    }
 }

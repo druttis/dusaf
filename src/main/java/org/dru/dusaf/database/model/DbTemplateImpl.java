@@ -18,18 +18,18 @@ public final class DbTemplateImpl implements DbTemplate {
     }
 
     @Override
-    public <T> DbColumn<T> newColumn(final String name, final Class<T> type, final int length,
+    public <T> DbColumn<T> newColumn(final String name, final Class<T> type, final int capacity,
                                      final DbModifier modifier) {
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(type, "type");
-        if (length < 0) {
-            throw new IllegalArgumentException("negative length: " + length);
+        if (capacity < 0) {
+            throw new IllegalArgumentException("negative capacity: " + capacity);
         }
         Objects.requireNonNull(modifier, "modifier");
         if (!columnNames.add(name)) {
             throw new IllegalArgumentException("column already exist: " + name);
         }
-        final DbColumn<T> column = new DbColumnImpl<>(name, dbTypes, type, length, modifier);
+        final DbColumn<T> column = new DbColumnImpl<>(name, dbTypes, type, capacity, modifier);
         columns.add(column);
         return column;
     }
@@ -40,8 +40,8 @@ public final class DbTemplateImpl implements DbTemplate {
     }
 
     @Override
-    public <T> DbColumn<T> newColumn(final String name, final Class<T> type, final int length) {
-        return newColumn(name, type, length, DbModifier.NONE);
+    public <T> DbColumn<T> newColumn(final String name, final Class<T> type, final int capacity) {
+        return newColumn(name, type, capacity, DbModifier.NONE);
     }
 
     @Override
@@ -55,8 +55,5 @@ public final class DbTemplateImpl implements DbTemplate {
     }
 
     private void requireLength(final Class<?> type) {
-        if (dbTypes.of(type, 0).isVariableLength()) {
-            throw new RuntimeException("length required");
-        }
     }
 }

@@ -1,18 +1,13 @@
 package org.dru.dusaf.database.type;
 
-import com.mysql.cj.MysqlType;
-
-import java.sql.JDBCType;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLType;
 
-public final class DbCharacter extends AbstractDbType<Character> {
-    public static final DbCharacter BOXED = new DbCharacter(Character.class);
-    public static final DbCharacter PRIMITIVE = new DbCharacter(char.class);
-
-    private DbCharacter(final Class<Character> type) {
-        super(type, MysqlType.CHAR, false, 0, 0);
+public final class DbCharType extends AbstractDbType<Character> {
+    public DbCharType(final SQLType sqlType, final int capacity) {
+        super(array(Character.class, char.class), sqlType, capacity);
     }
 
     @Override
