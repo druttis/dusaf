@@ -33,11 +33,6 @@ final class LruCache<K, V> implements Cache<K, V> {
     }
 
     @Override
-    public int size() {
-        return cache.size();
-    }
-
-    @Override
     public V get(final K key, final CacheFetcher<K, V> fetcher) {
         final V result;
         synchronized (monitor) {

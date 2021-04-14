@@ -16,7 +16,5 @@ public interface Cache<K, V> {
 
     void removeAll(Set<K> keys);
 
-    int size();
-
     void clear();
 }

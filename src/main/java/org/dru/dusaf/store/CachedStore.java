@@ -19,7 +19,7 @@ public final class CachedStore<K, V> implements Store<K, V> {
         Objects.requireNonNull(cache, "cache");
         this.store = store;
         this.cache = cache;
-        fetcher = new StoreFetcher<>(store);
+        fetcher = new StoreCacheFetcher<>(store);
     }
 
     @Override

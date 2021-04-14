@@ -6,10 +6,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public final class StoreFetcher<K, V> implements CacheFetcher<K, V> {
+public final class StoreCacheFetcher<K, V> implements CacheFetcher<K, V> {
     private final Store<K, V> store;
 
-    public StoreFetcher(final Store<K, V> store) {
+    public StoreCacheFetcher(final Store<K, V> store) {
         Objects.requireNonNull(store, "store");
         this.store = store;
     }
