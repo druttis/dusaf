@@ -27,13 +27,13 @@ public final class SQLSelectBuilder extends SQLBuilder {
         sb.append(" FROM ");
         sb.append(table.getDbName());
         appendConditionSQL(sb);
-        if (offset != null) {
-            sb.append(" OFFSET ");
-            sb.append(offset);
-        }
         if (limit != null) {
             sb.append(" LIMIT ");
             sb.append(limit);
+        }
+        if (offset != null) {
+            sb.append(" OFFSET ");
+            sb.append(offset);
         }
         if (forUpdate) {
             sb.append(" FOR UPDATE");
