@@ -36,7 +36,7 @@ public final class ArrayIterator<E> implements Iterator<E> {
 
     @Override
     public E next() {
-        if (hasNext()) {
+        if (!hasNext()) {
             throw new NoSuchElementException();
         }
         return a[p++];
