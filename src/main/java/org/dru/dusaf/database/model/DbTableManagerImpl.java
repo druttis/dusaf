@@ -1,6 +1,8 @@
 package org.dru.dusaf.database.model;
 
 import org.dru.dusaf.database.executor.DbExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -9,6 +11,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class DbTableManagerImpl implements DbTableManager {
+    private static final Logger logger = LoggerFactory.getLogger(DbTableManagerImpl.class);
+
     private final Set<Entry> visited;
 
     public DbTableManagerImpl() {
@@ -21,7 +25,7 @@ public final class DbTableManagerImpl implements DbTableManager {
             try {
                 executor.update(shard, conn -> {
                     final String ddl = table.getDDL(conn);
-                    System.out.println(ddl);
+                    logger.debug(ddl);
                     try (final PreparedStatement stmt = conn.prepareStatement(ddl)) {
                         stmt.execute();
                     }
