@@ -8,6 +8,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -19,11 +20,16 @@ public final class MqttMessageClient implements MessageClient {
     private final Receiver receiver;
 
     public MqttMessageClient(final JsonConf jsonConfig, final HostNameProvider hostNameProvider) {
-        final MqttConfig conf = jsonConfig.get(MqttConfig.class, "dusaf-mqtt");
+        final MqttConfig conf = jsonConfig.get(MqttConfig.class, "dusaf-mqtt", MqttConfig::new);
         final MqttConnectOptions ops = new MqttConnectOptions();
-        ops.setCleanSession(conf.isCleanSession());
+        ops.setCleanSession(conf.cleanSession);
+        ops.setAutomaticReconnect(conf.automaticReconnect);
+        ops.setConnectionTimeout(conf.connectionTimeout);
+        ops.setKeepAliveInterval(conf.keepAliveInterval);
+        ops.setPassword(conf.password.toCharArray());
+        ops.setServerURIs(conf.serverURIs);
         try {
-            mqttClient = new MqttClient(conf.getBroker(), hostNameProvider.getCanonicalName());
+            mqttClient = new MqttClient(conf.serverURIs[0], hostNameProvider.getCanonicalName());
             logger.info("connecting to mqtt broker...");
             mqttClient.connect(ops);
             logger.info("connected to mqtt broker.");

@@ -1,22 +1,13 @@
 package org.dru.dusaf.messaging;
 
 public final class MqttConfig {
-    private String broker;
-    private boolean cleanSession;
-
-    public MqttConfig(final String broker, final boolean cleanSession) {
-        this.broker = broker;
-        this.cleanSession = cleanSession;
-    }
+    public String[] serverURIs = {"tcp://127.0.0.1:1883"};
+    public boolean cleanSession = true;
+    public boolean automaticReconnect = true;
+    public int connectionTimeout = 10;
+    public int keepAliveInterval = 10;
+    public String password = "";
 
     public MqttConfig() {
-    }
-
-    public String getBroker() {
-        return broker;
-    }
-
-    public boolean isCleanSession() {
-        return cleanSession;
     }
 }
