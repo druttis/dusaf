@@ -6,7 +6,7 @@ import org.dru.dusaf.inject.Provides;
 
 import javax.inject.Singleton;
 
-public class EventModule implements Module {
+public final class EventModule implements Module {
     @Provides
     @Singleton
     @Expose

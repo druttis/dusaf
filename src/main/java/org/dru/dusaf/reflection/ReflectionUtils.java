@@ -135,6 +135,21 @@ public final class ReflectionUtils {
         return target;
     }
 
+    @SuppressWarnings("unchecked")
+    public static <E extends Enum<E>> E[] getEnumConstants(final Class<E> type) {
+        final List<E> values = new ArrayList<>();
+        for (final Field field : type.getFields()) {
+            if (field.isEnumConstant()) {
+                try {
+                    values.add(type.cast(field.get(null)));
+                } catch (final IllegalAccessException exc) {
+                    throw new RuntimeException(exc);
+                }
+            }
+        }
+        return values.toArray((E[]) Array.newInstance(type, 0));
+    }
+
     private ReflectionUtils() {
     }
 }
