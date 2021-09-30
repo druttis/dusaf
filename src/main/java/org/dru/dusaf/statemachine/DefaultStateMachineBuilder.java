@@ -1,6 +1,5 @@
 package org.dru.dusaf.statemachine;
 
-import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
