@@ -38,6 +38,7 @@ public final class EcsEntity {
                     components = Arrays.copyOf(components, ((componentId + 1) * 3) >> 1);
                 }
                 components[componentId] = component;
+                aspectBits.set(componentId);
                 engine.onEntityAspectChanged(this);
             } else if (component == null) {
                 // remove
