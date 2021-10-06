@@ -108,6 +108,9 @@ public final class EcsEngine {
 
     private void addEntityInternal(final EcsEntity entity) {
         EcsUtil.add(entities, 0, entity);
+        for (final EcsFamily family : familyByAspect.values()) {
+            family.onEntityAdded(entity);
+        }
     }
 
     void removeEntity(final EcsEntity entity) {
@@ -120,6 +123,9 @@ public final class EcsEngine {
 
     private void removeEntityInternal(final EcsEntity entity) {
         EcsUtil.remove(entities, 0, entity);
+        for (final EcsFamily family : familyByAspect.values()) {
+            family.onEntityRemoved(entity);
+        }
     }
 
     void onEntityAspectChanged(final EcsEntity entity) {
