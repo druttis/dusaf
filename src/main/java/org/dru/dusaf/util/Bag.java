@@ -1,15 +1,21 @@
 package org.dru.dusaf.util;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Objects;
 
-public class Bag<T> {
+public class Bag<T> implements Iterable<T> {
     private T[] items;
     private int size;
 
     @SuppressWarnings("unchecked")
     public Bag() {
         items = (T[]) new Object[3];
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return new ArrayIterator<>(items, 0, size);
     }
 
     public int size() {
