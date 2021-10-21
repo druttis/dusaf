@@ -1,17 +1,14 @@
-package org.dru.dusaf.ecs.internal;
-
-import org.dru.dusaf.ecs.EcsMapping;
-import org.dru.dusaf.ecs.EcsMappings;
+package org.dru.dusaf.ecs;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public final class DynamicMappings implements EcsMappings {
+final class DynamicMappings implements EcsMappings {
     private final AtomicInteger componentIdCounter;
     private final Map<Class<?>, EcsMapping<?>> map;
 
-    public DynamicMappings() {
+    DynamicMappings() {
         componentIdCounter = new AtomicInteger();
         map = new ConcurrentHashMap<>();
     }

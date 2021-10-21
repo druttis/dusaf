@@ -1,6 +1,5 @@
 package org.dru.dusaf.ecs;
 
-import org.dru.dusaf.ecs.internal.DynamicMappings;
 import org.dru.dusaf.util.Bag;
 
 import java.util.*;
@@ -17,7 +16,7 @@ public final class EcsEngine {
     private final Map<EcsAspect, EcsFamily> familyByAspect;
     private final Bag<EcsEntity> entities;
 
-    private EcsEngine(final EcsMappings mappings) {
+    EcsEngine(final EcsMappings mappings) {
         Objects.requireNonNull(mappings, "mappings");
         this.mappings = mappings;
         updating = new AtomicBoolean();
@@ -27,10 +26,6 @@ public final class EcsEngine {
         familyIdCounter = new AtomicInteger(1);
         familyByAspect = new HashMap<>();
         entities = new Bag<>();
-    }
-
-    public EcsEngine() {
-        this(new DynamicMappings());
     }
 
     public void addSystem(final EcsSystem system) {

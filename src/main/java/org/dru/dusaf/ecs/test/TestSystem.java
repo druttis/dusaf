@@ -1,6 +1,8 @@
 package org.dru.dusaf.ecs.test;
 
 import org.dru.dusaf.ecs.*;
+import org.dru.dusaf.inject.InjectionBuilder;
+import org.dru.dusaf.inject.Injector;
 
 import java.awt.*;
 
@@ -45,8 +47,16 @@ public class TestSystem implements EcsSystem {
     }
 
     public static void main(String[] args) {
+        final Injector injector = InjectionBuilder.newInjector(EcsModule.class);
+        final EcsEngineBuilderSupplier supplier = injector.getInstance(EcsEngineBuilderSupplier.class);
+        final EcsEngineBuilder builder = supplier.get();
+        builder.withDynamicMapping();
+        /*
+        builder.withMapping(Point.class, 0);
+        builder.withMapping(Dimension.class, 1);
+         */
         System.out.printf("number of entities    : %d\n", NUM_ENTITIES);
-        final EcsEngine engine = new EcsEngine();
+        final EcsEngine engine = builder.build();
         engine.addSystem(new TestSystem());
         System.out.printf("number of iterations  : %d\n", NUM_ITERATIONS);
         final long startNanos = System.nanoTime();
