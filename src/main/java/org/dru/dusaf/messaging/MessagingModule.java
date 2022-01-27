@@ -7,7 +7,7 @@ import org.dru.dusaf.inject.Expose;
 import org.dru.dusaf.inject.Module;
 import org.dru.dusaf.inject.Provides;
 import org.dru.dusaf.json.JsonModule;
-import org.dru.dusaf.json.JsonSerializerSupplier;
+import org.dru.dusaf.json.JsonSerializer;
 import org.dru.dusaf.json.conf.JsonConf;
 
 import javax.inject.Singleton;
@@ -25,7 +25,7 @@ public final class MessagingModule implements Module {
     @Singleton
     @Expose
     public TypedMessageClient getTypedMessageClient(final MessageClient messageClient,
-                                                    final JsonSerializerSupplier jsonSerializerSupplier) {
-        return new JsonMessageClient(messageClient, jsonSerializerSupplier);
+                                                    final JsonSerializer jsonSerializer) {
+        return new JsonMessageClient(messageClient, jsonSerializer);
     }
 }

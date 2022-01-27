@@ -2,6 +2,7 @@ package org.dru.dusaf.util;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 public class Bag<T> implements Iterable<T> {
@@ -15,7 +16,7 @@ public class Bag<T> implements Iterable<T> {
 
     @Override
     public Iterator<T> iterator() {
-        return new ArrayIterator<>(items, 0, size);
+        return new BagIterator();
     }
 
     public int size() {
@@ -94,6 +95,34 @@ public class Bag<T> implements Iterable<T> {
     public void clear() {
         for (int index = 0; index < size; index++) {
             items[index] = null;
+        }
+    }
+
+    private final class BagIterator implements Iterator<T> {
+        private T current;
+        private int index;
+
+        @Override
+        public boolean hasNext() {
+            return (index < size);
+        }
+
+        @Override
+        public T next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            current = items[index++];
+            return current;
+        }
+
+        @Override
+        public void remove() {
+            if (current == null) {
+                throw new IllegalStateException();
+            }
+            current = null;
+            Bag.this.remove(--index);
         }
     }
 }

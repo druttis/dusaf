@@ -2,15 +2,12 @@ package org.dru.dusaf.json.conf;
 
 import org.dru.dusaf.conf.ConfImpl;
 import org.dru.dusaf.json.JsonSerializer;
-import org.dru.dusaf.json.JsonSerializerSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
@@ -20,8 +17,8 @@ public class JsonConfImpl implements JsonConf {
     private final JsonSerializer jsonSerializer;
     private final Map<String, Object> configs;
 
-    public JsonConfImpl(final JsonSerializerSupplier jsonSerializerSupplier) {
-        jsonSerializer = jsonSerializerSupplier.get();
+    public JsonConfImpl(final JsonSerializer jsonSerializer) {
+        this.jsonSerializer = jsonSerializer;
         configs = new ConcurrentHashMap<>();
     }
 
@@ -44,7 +41,7 @@ public class JsonConfImpl implements JsonConf {
             final String file = "/" + name + ".json";
             logger.info("loading conf: " + file);
             try (final InputStream in = ConfImpl.class.getResourceAsStream(file)) {
-                return jsonSerializer.readObject(in, type);
+                return jsonSerializer.read(in).decode(type);
             } catch (final Exception exc) {
                 if (report) {
                     logger.error("failed to load conf: " + file, exc);

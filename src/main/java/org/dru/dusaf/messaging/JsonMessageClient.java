@@ -1,7 +1,6 @@
 package org.dru.dusaf.messaging;
 
 import org.dru.dusaf.json.JsonSerializer;
-import org.dru.dusaf.json.JsonSerializerSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,9 +21,9 @@ public final class JsonMessageClient implements TypedMessageClient {
     private final JsonSerializer jsonSerializer;
     private final Map<Class<?>, Subscriptions<?>> subscriptionsByType;
 
-    public JsonMessageClient(final MessageClient messageClient, final JsonSerializerSupplier jsonSerializerSupplier) {
+    public JsonMessageClient(final MessageClient messageClient, final JsonSerializer jsonSerializer) {
         this.messageClient = messageClient;
-        jsonSerializer = jsonSerializerSupplier.get();
+        this.jsonSerializer = jsonSerializer;
         subscriptionsByType = new ConcurrentHashMap<>();
     }
 
@@ -58,7 +57,7 @@ public final class JsonMessageClient implements TypedMessageClient {
         Objects.requireNonNull(message, "message");
         final byte[] payload;
         try (final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            jsonSerializer.writeObject(out, message);
+            jsonSerializer.encode(message).write(out);
             payload = out.toByteArray();
         } catch (final IOException exc) {
             logger.error("failed to serialize message:", exc);
@@ -88,7 +87,7 @@ public final class JsonMessageClient implements TypedMessageClient {
         public void handleMessage(final String topic, final byte[] content) {
             final T message;
             try (final InputStream in = new ByteArrayInputStream(content)) {
-                message = jsonSerializer.readObject(in, type);
+                message = jsonSerializer.read(in).decode(type);
             } catch (final IOException exc) {
                 logger.error("failed to de-serialize error:", exc);
                 return;

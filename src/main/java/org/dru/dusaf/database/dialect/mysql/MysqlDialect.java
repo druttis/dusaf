@@ -1,8 +1,8 @@
 package org.dru.dusaf.database.dialect.mysql;
 
-import org.dru.dusaf.database.dialect.*;
+import org.dru.dusaf.database.dialect.DbDialect;
 import org.dru.dusaf.database.type.*;
-import org.dru.dusaf.json.JsonSerializerSupplier;
+import org.dru.dusaf.json.JsonSerializer;
 import org.dru.dusaf.serialization.*;
 
 import java.sql.SQLType;
@@ -27,12 +27,12 @@ public final class MysqlDialect implements DbDialect {
     private static final DbFloatType FLOAT_TYPE = new DbFloatType(FLOAT, FLOAT.getPrecision().intValue());
     private static final DbDoubleType DOUBLE_TYPE = new DbDoubleType(DOUBLE, DOUBLE.getPrecision().intValue());
 
-    private final JsonSerializerSupplier jsonSerializerSupplier;
+    private final JsonSerializer jsonSerializer;
     private final Map<Class<?>, Supplier<? extends DbType<?>>> supplierByType;
     private final Map<Class<?>, Function<Integer, ? extends DbType<?>>> functionByType;
 
-    public MysqlDialect(final JsonSerializerSupplier jsonSerializerSupplier) {
-        this.jsonSerializerSupplier = jsonSerializerSupplier;
+    public MysqlDialect(final JsonSerializer jsonSerializer) {
+        this.jsonSerializer = jsonSerializer;
         supplierByType = new ConcurrentHashMap<>();
         functionByType = new ConcurrentHashMap<>();
         registerSupplier(BOOL_TYPE, this::getBooleanType);
@@ -209,10 +209,10 @@ public final class MysqlDialect implements DbDialect {
     public <T> DbType<T> getJsonType(final Class<T> type, final int capacity) {
         if (capacity <= TINYTEXT.getPrecision()) {
             return new DbBlobType<>(type, TINYTEXT, capacity,
-                    new JsonDataSerializer<>(type, jsonSerializerSupplier));
+                    new JsonDataSerializer<>(type, jsonSerializer));
         }
         return new DbBlobType<>(type, getBlobType(capacity), capacity,
-                new JsonDataSerializer<>(type, jsonSerializerSupplier));
+                new JsonDataSerializer<>(type, jsonSerializer));
     }
 
     private SQLType getBlobType(final int capacity) {

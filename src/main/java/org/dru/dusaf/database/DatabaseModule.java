@@ -23,7 +23,7 @@ import org.dru.dusaf.inject.Expose;
 import org.dru.dusaf.inject.Module;
 import org.dru.dusaf.inject.Provides;
 import org.dru.dusaf.json.JsonModule;
-import org.dru.dusaf.json.JsonSerializerSupplier;
+import org.dru.dusaf.json.JsonSerializer;
 import org.dru.dusaf.json.conf.JsonConf;
 import org.dru.dusaf.time.TimeModule;
 import org.dru.dusaf.time.TimeSupplier;
@@ -43,8 +43,8 @@ public final class DatabaseModule implements Module {
 
     @Provides
     @Singleton
-    public MysqlDialect getMysqlDialect(final JsonSerializerSupplier jsonSerializerSupplier) {
-        return new MysqlDialect(jsonSerializerSupplier);
+    public MysqlDialect getMysqlDialect(final JsonSerializer jsonSerializer) {
+        return new MysqlDialect(jsonSerializer);
     }
 
     @Provides

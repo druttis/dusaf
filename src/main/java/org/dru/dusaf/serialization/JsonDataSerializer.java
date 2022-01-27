@@ -1,7 +1,6 @@
 package org.dru.dusaf.serialization;
 
 import org.dru.dusaf.json.JsonSerializer;
-import org.dru.dusaf.json.JsonSerializerSupplier;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,14 +11,14 @@ public final class JsonDataSerializer<T> implements TypeSerializer<T> {
     private final Class<T> type;
     private final JsonSerializer jsonSerializer;
 
-    public JsonDataSerializer(final Class<T> type, final JsonSerializerSupplier jsonSerializerSupplier) {
+    public JsonDataSerializer(final Class<T> type, final JsonSerializer jsonSerializer) {
         this.type = type;
-        jsonSerializer = jsonSerializerSupplier.get();
+        this.jsonSerializer = jsonSerializer;
     }
 
     @Override
     public T decode(final InputStream in) throws IOException {
-        return jsonSerializer.readObject(in, type);
+        return jsonSerializer.read(in).decode(type);
     }
 
     @Override
@@ -29,6 +28,6 @@ public final class JsonDataSerializer<T> implements TypeSerializer<T> {
 
     @Override
     public void encode(final OutputStream out, final T value) throws IOException {
-        jsonSerializer.writeObject(out, value);
+        jsonSerializer.encode(value).write(out);
     }
 }
